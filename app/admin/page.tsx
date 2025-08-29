@@ -7,12 +7,11 @@ export default async function PedidosPage() {
     orderBy: { createdAt: "desc" },
     include: {
       user: { select: { fullName: true, email: true } },
-      // <- o nome correto da relação no Order é "items"
       items: {
         select: {
           quantity: true,
           price: true,
-          product: { select: { name: true } }, // nome vem do Product
+          product: { select: { name: true } },
         },
       },
     },
@@ -47,8 +46,7 @@ export default async function PedidosPage() {
                   <td className="p-2">{p.user?.fullName ?? "—"}</td>
                   <td className="p-2">{p.user?.email ?? "—"}</td>
                   <td className="p-2">
-                    {p.items?.map((it) => `${it.product?.name} x${it.quantity}`).join(", ") ??
-                      "—"}
+                    {p.items?.map((it) => `${it.product?.name} x${it.quantity}`).join(", ") ?? "—"}
                   </td>
                   <td className="p-2">R$ {total.toFixed(2)}</td>
                 </tr>
