@@ -1,70 +1,27 @@
-// app/admin/page.tsx
+// app/admin/pedidos/page.tsx
 import { prisma } from "@/lib/db";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminHome() {
-  // Busca contadores e últimos pedidos sem depender de campos opcionais
-  const [totalOrders, totalProducts, recentOrders] = await Promise.all([
-    prisma.order.count().catch(() => 0),
-    prisma.product.count().catch(() => 0), // sem filtro isActive
-    prisma.order
-      .findMany({
-        take: 10,
-        orderBy: { createdAt: "desc" },
-        // Seleciona apenas campos comuns; se algum não existir, o "as any" abaixo protege
-        select: {
-          id: true,
-          createdAt: true,
-          total: true,
-          status: true,
+export default async function AdminPedidosPage() {
+  // Busca pedidos com o usuário; sem incluir "orderItems" (que não existe nesse schema)
+  const orders = await prisma.order
+    .findMany({
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      include: {
+        user: {
+          select: { fullName: true, email: true },
         },
-      })
-      .catch(() => [] as any[]),
-  ]);
-
-  const receitaUltimos10 = Number(
-    (recentOrders as any[]).reduce(
-      (s, o) => s + Number(o?.total ?? 0),
-      0
-    )
-  );
+      },
+    })
+    .catch(() => [] as any[]);
 
   return (
     <div className="p-6 space-y-6">
-      {/* Cards de métricas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader>Pedidos</CardHeader>
-          <CardContent>
-            <div className="text-3xl font-semibold">{totalOrders}</div>
-            <p className="text-sm text-gray-500">Total de pedidos</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>Produtos</CardHeader>
-          <CardContent>
-            <div className="text-3xl font-semibold">{totalProducts}</div>
-            <p className="text-sm text-gray-500">Produtos cadastrados</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>Receita (últimos 10)</CardHeader>
-          <CardContent>
-            <div className="text-3xl font-semibold">
-              R$ {receitaUltimos10.toFixed(2)}
-            </div>
-            <p className="text-sm text-gray-500">Soma dos 10 pedidos mais recentes</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Tabela de pedidos recentes */}
       <Card>
-        <CardHeader>Pedidos recentes</CardHeader>
+        <CardHeader>Pedidos</CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -72,26 +29,30 @@ export default async function AdminHome() {
                 <tr className="text-left">
                   <th className="p-2">ID</th>
                   <th className="p-2">Data</th>
+                  <th className="p-2">Cliente</th>
+                  <th className="p-2">E-mail</th>
                   <th className="p-2">Total</th>
                   <th className="p-2">Status</th>
                 </tr>
               </thead>
               <tbody>
-                {(recentOrders as any[]).map((o) => (
+                {orders.map((o: any) => (
                   <tr key={o.id} className="border-t">
                     <td className="p-2">{o.id}</td>
                     <td className="p-2">
                       {o?.createdAt
-                        ? new Date(o.createdAt as any).toLocaleString("pt-BR")
+                        ? new Date(o.createdAt).toLocaleString("pt-BR")
                         : "-"}
                     </td>
+                    <td className="p-2">{o?.user?.fullName ?? "-"}</td>
+                    <td className="p-2">{o?.user?.email ?? "-"}</td>
                     <td className="p-2">R$ {Number(o?.total ?? 0).toFixed(2)}</td>
                     <td className="p-2">{o?.status ?? "-"}</td>
                   </tr>
                 ))}
-                {(recentOrders as any[]).length === 0 && (
+                {orders.length === 0 && (
                   <tr>
-                    <td className="p-2 text-gray-500" colSpan={4}>
+                    <td className="p-2 text-gray-500" colSpan={6}>
                       Nenhum pedido encontrado.
                     </td>
                   </tr>
