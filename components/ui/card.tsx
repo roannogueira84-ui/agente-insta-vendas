@@ -1,5 +1,4 @@
 import * as React from "react";
-import { cn } from "./utils";
 
 export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return <div className={cn("rounded-lg border bg-white shadow-sm", className)} {...props} />;
@@ -15,6 +14,6 @@ export function CardFooter({ className, ...props }: React.HTMLAttributes<HTMLDiv
 }
 
 // helper simples
-export function cn(...classes: Array<string | undefined | false>) {
+function cn(...classes: Array<string | undefined | false>) {
   return classes.filter(Boolean).join(" ");
 }
