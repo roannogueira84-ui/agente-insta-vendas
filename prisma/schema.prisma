@@ -1,11 +1,6 @@
-// ---------------------------
 // prisma/schema.prisma
-// ---------------------------
-
 generator client {
   provider = "prisma-client-js"
-  // (opcional) você pode definir um output se quiser:
-  // output   = "./node_modules/@prisma/client"
 }
 
 datasource db {
@@ -13,102 +8,40 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ---------------------------
-// Enums
-// ---------------------------
+model User {
+  id        String   @id @default(cuid())
+  fullName  String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
 
-enum UserRole {
-  ADMIN
-  CLIENT
+  orders    Order[]
+}
+
+model Order {
+  id        String      @id @default(cuid())
+  createdAt DateTime    @default(now())
+  status    OrderStatus
+  userId    String
+  user      User        @relation(fields: [userId], references: [id])
+
+  // nome padronizado do relation ↓↓↓
+  items     OrderItem[]
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+  name      String
+  price     Decimal  @db.Decimal(10,2)
+  quantity  Int
 }
 
 enum OrderStatus {
   PENDING
   PAID
-  FAILED
-  REFUNDED
+  SHIPPED
+  COMPLETED
   CANCELED
-}
-
-// ---------------------------
-// Models
-// ---------------------------
-
-model User {
-  id        String    @id @default(cuid())
-  email     String    @unique
-  fullName  String?
-  password  String?
-  role      UserRole  @default(CLIENT)
-  isActive  Boolean   @default(true)
-  createdAt DateTime  @default(now())
-
-  // Relações
-  products  Product[]
-  orders    Order[]
-
-  @@map("users")
-}
-
-model Product {
-  id          String    @id @default(cuid())
-  name        String
-  description String?
-  price       Decimal   @db.Decimal(10, 2)
-  imageUrl    String?
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-
-  // dono (opcional)
-  user     User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
-  userId   String?
-
-  // itens de pedidos que apontam para este produto
-  items    OrderItem[]
-
-  @@map("products")
-}
-
-model Order {
-  id            String       @id @default(cuid())
-  customerEmail String?
-  customerName  String?
-  total         Decimal      @db.Decimal(10, 2)
-  status        OrderStatus  @default(PENDING)
-  provider      String?
-  paymentId     String?      @unique
-  metadata      Json?
-  createdAt     DateTime     @default(now())
-
-  // Usuário que fez o pedido (opcional)
-  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
-  userId String?
-
-  // <<< relação correta: campo PLURAL 'items' apontando para o modelo singular 'OrderItem'
-  items  OrderItem[]
-
-  @@map("orders")
-}
-
-model OrderItem {
-  id        String  @id @default(cuid())
-  orderId   String
-  productId String
-  quantity  Int     @default(1)
-  price     Decimal @db.Decimal(10, 2)
-
-  // Relações
-  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  @@map("order_items")
-}
-
-model WebhookLog {
-  id        String   @id @default(cuid())
-  provider  String
-  payload   Json
-  createdAt DateTime @default(now())
-
-  @@map("webhook_logs")
 }
