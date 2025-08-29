@@ -1,5 +1,4 @@
 import * as React from "react";
-import { cn } from "./utils";
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: "default" | "success" | "warning" | "destructive";
@@ -27,6 +26,6 @@ export function Badge({ className, variant = "default", ...props }: BadgeProps) 
 
 export default Badge;
 
-export function cn(...classes: Array<string | false | undefined>) {
+function cn(...classes: Array<string | false | undefined>) {
   return classes.filter(Boolean).join(" ");
 }
