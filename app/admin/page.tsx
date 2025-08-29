@@ -4,17 +4,10 @@ export default async function PedidosPage() {
   const orders = await prisma.order.findMany({
     include: {
       user: {
-        select: {
-          fullName: true,
-          email: true,
-        },
+        select: { fullName: true, email: true },
       },
       items: {
-        select: {
-          name: true,
-          price: true,
-          quantity: true,
-        },
+        select: { name: true, price: true, quantity: true },
       },
     },
     orderBy: { createdAt: "desc" },
@@ -31,10 +24,7 @@ export default async function PedidosPage() {
 
       <div className="space-y-4">
         {orders.map((order) => (
-          <div
-            key={order.id}
-            className="border rounded-lg p-4 shadow-sm bg-white"
-          >
+          <div key={order.id} className="border rounded-lg p-4 shadow-sm bg-white">
             <div className="mb-2">
               <p className="font-semibold">
                 Cliente: {order.user?.fullName ?? "Sem nome"}
@@ -47,8 +37,7 @@ export default async function PedidosPage() {
               <ul className="list-disc list-inside space-y-1">
                 {order.items.map((it, idx) => (
                   <li key={idx}>
-                    {it.name} — {it.quantity} × R$
-                    {Number(it.price).toFixed(2)}
+                    {it.name} — {it.quantity} × R${Number(it.price).toFixed(2)}
                   </li>
                 ))}
               </ul>
