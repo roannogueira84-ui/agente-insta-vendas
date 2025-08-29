@@ -2,7 +2,7 @@
   "name": "app",
   "private": true,
   "scripts": {
-    "build": "prisma generate --schema prisma/schema.prisma && prisma db push --schema prisma/schema.prisma && next build",
+    "build": "prisma generate --schema prisma/schema.prisma && next build",
     "start": "prisma generate --schema prisma/schema.prisma && prisma db push --schema prisma/schema.prisma && next start",
     "dev": "prisma generate --schema prisma/schema.prisma && prisma db push --schema prisma/schema.prisma && next dev",
     "lint": "next lint"
