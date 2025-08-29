@@ -5,6 +5,7 @@ import { Card, CardHeader, CardContent } from "@/components/ui/card";
 export const dynamic = "force-dynamic";
 
 export default async function PedidosAdminPage() {
+  // ⚠️ NADA de orderItems aqui
   const pedidos = await prisma.order.findMany({
     take: 50,
     orderBy: { createdAt: "desc" },
