@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ajustes básicos */
+html, body, #__next { height: 100%; }
+body { @apply bg-gray-50 text-gray-900; }
+a { @apply text-inherit no-underline; }
