@@ -1,74 +1,88 @@
 // app/admin/pedidos/page.tsx
-import { prisma } from '@/lib/db';
-import { Card, CardContent } from '@/components/ui/card';
+import { prisma } from "@/lib/db"; // mantém seu import centralizado
+import { format } from "date-fns";
+import ptBR from "date-fns/locale/pt-BR";
+
+export const dynamic = "force-dynamic";
 
 export default async function PedidosPage() {
-  // Busca pedidos mais recentes, com usuário e itens (inclui nome do produto)
+  // Se no seu schema o campo for "orderItems", troque "items" -> "orderItems" aqui ↓↓↓
   const pedidos = await prisma.order.findMany({
-    orderBy: { createdAt: 'desc' },
     include: {
-      user: { select: { fullName: true, email: true } },
-      items: {
-        include: {
-          product: { select: { name: true } },
-        },
+      user: {
+        select: { fullName: true, email: true },
+      },
+      items: { // <-- troque para "orderItems" se esse for o nome no seu schema
+        select: { name: true, price: true, quantity: true },
       },
     },
+    orderBy: { createdAt: "desc" },
+    take: 25,
   });
 
   return (
-    <div className="p-6">
-      <Card>
-        <CardContent className="p-0">
-          <table className="min-w-full text-sm">
-            <thead className="bg-gray-50 text-left">
-              <tr>
-                <th className="p-2">ID</th>
-                <th className="p-2">Data</th>
-                <th className="p-2">Cliente</th>
-                <th className="p-2">E-mail</th>
-                <th className="p-2">Status</th>
-                <th className="p-2">Total</th>
-                <th className="p-2">Itens</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pedidos.map((p) => (
-                <tr key={p.id} className="border-t">
-                  <td className="p-2">{p.id}</td>
-                  <td className="p-2">
-                    {new Date(p.createdAt as any).toLocaleString('pt-BR')}
-                  </td>
-                  <td className="p-2">{p.user?.fullName ?? '—'}</td>
-                  <td className="p-2">{p.user?.email ?? '—'}</td>
-                  <td className="p-2">{p.status ?? '—'}</td>
-                  <td className="p-2">
-                    R$ {Number(p.total ?? 0).toFixed(2)}
-                  </td>
-                  <td className="p-2">
-                    {p.items.length > 0
-                      ? p.items
-                          .map(
-                            (item) =>
-                              `${item.quantity}× ${(item.product?.name ?? 'Produto')} - R$ ${Number(item.price ?? 0).toFixed(2)}`
-                          )
-                          .join(' | ')
-                      : '—'}
-                  </td>
-                </tr>
-              ))}
+    <main className="p-6 space-y-6">
+      <header className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Pedidos</h1>
+        <span className="text-sm text-gray-500">
+          {pedidos.length} últimos pedidos
+        </span>
+      </header>
 
-              {pedidos.length === 0 && (
-                <tr>
-                  <td className="p-2 text-gray-500" colSpan={7}>
-                    Nenhum pedido encontrado.
+      <div className="overflow-x-auto rounded-lg border">
+        <table className="min-w-[800px] w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr className="text-left">
+              <th className="px-4 py-3 font-medium">Data</th>
+              <th className="px-4 py-3 font-medium">Cliente</th>
+              <th className="px-4 py-3 font-medium">E-mail</th>
+              <th className="px-4 py-3 font-medium">Itens</th>
+              <th className="px-4 py-3 font-medium">Total</th>
+              <th className="px-4 py-3 font-medium">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pedidos.map((p) => {
+              // Se trocou para "orderItems", ajuste aqui também ↓↓↓
+              const itens = p.items ?? []; // p.orderItems
+              const total =
+                itens.reduce((s, it) => s + Number(it.price) * it.quantity, 0) || 0;
+
+              return (
+                <tr key={p.id} className="border-t">
+                  <td className="px-4 py-3">
+                    {p.createdAt
+                      ? format(new Date(p.createdAt), "dd/MM/yyyy HH:mm", {
+                          locale: ptBR,
+                        })
+                      : "-"}
+                  </td>
+                  <td className="px-4 py-3">{p.user?.fullName ?? "-"}</td>
+                  <td className="px-4 py-3">{p.user?.email ?? "-"}</td>
+                  <td className="px-4 py-3">
+                    {itens.length
+                      ? itens
+                          .map((it) => `${it.name} x${it.quantity}`)
+                          .join(", ")
+                      : "-"}
+                  </td>
+                  <td className="px-4 py-3">
+                    {total.toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    })}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+                      {p.status}
+                    </span>
                   </td>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </CardContent>
-      </Card>
-    </div>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </main>
   );
 }
