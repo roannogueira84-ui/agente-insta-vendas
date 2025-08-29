@@ -2,13 +2,13 @@
   "name": "app",
   "private": true,
   "scripts": {
-  "build": "prisma generate --schema app/prisma/schema.prisma && prisma db push --schema app/prisma/schema.prisma && next build",
-  "start": "prisma generate --schema app/prisma/schema.prisma && prisma db push --schema app/prisma/schema.prisma && next start",
-  "dev": "prisma generate --schema app/prisma/schema.prisma && prisma db push --schema app/prisma/schema.prisma && next dev",
+  "build": "prisma generate --schema prisma/schema.prisma && prisma db push --schema prisma/schema.prisma && next build",
+  "start": "prisma generate --schema prisma/schema.prisma && prisma db push --schema prisma/schema.prisma && next start",
+  "dev": "prisma generate --schema prisma/schema.prisma && prisma db push --schema prisma/schema.prisma && next dev",
   "lint": "next lint"
 },
-  "prisma": {
-  "schema": "app/prisma/schema.prisma",
+"prisma": {
+  "schema": "prisma/schema.prisma",
   "seed": "tsx --require dotenv/config scripts/seed.ts"
 },
 "devDependencies": {
