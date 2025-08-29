@@ -2,15 +2,15 @@
   "name": "app",
   "private": true,
   "scripts": {
-  "build": "prisma generate --schema prisma/schema.prisma && prisma db push --schema prisma/schema.prisma && next build",
-  "start": "prisma generate --schema prisma/schema.prisma && prisma db push --schema prisma/schema.prisma && next start",
-  "dev": "prisma generate --schema prisma/schema.prisma && prisma db push --schema prisma/schema.prisma && next dev",
-  "lint": "next lint"
-},
-"prisma": {
-  "schema": "prisma/schema.prisma",
-  "seed": "tsx --require dotenv/config scripts/seed.ts"
-},
+    "build": "prisma generate --schema prisma/schema.prisma && prisma db push --schema prisma/schema.prisma && next build",
+    "start": "prisma generate --schema prisma/schema.prisma && prisma db push --schema prisma/schema.prisma && next start",
+    "dev": "prisma generate --schema prisma/schema.prisma && prisma db push --schema prisma/schema.prisma && next dev",
+    "lint": "next lint"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma",
+    "seed": "tsx --require dotenv/config scripts/seed.ts"
+  },
 "devDependencies": {
   "eslint": "8.57.0",
   "@typescript-eslint/parser": "7.18.0",
