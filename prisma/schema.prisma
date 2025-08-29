@@ -27,6 +27,7 @@ enum OrderStatus {
   PAID
   FAILED
   REFUNDED
+  CANCELED
 }
 
 // ---------------------------
