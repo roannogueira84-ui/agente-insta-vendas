@@ -1,30 +1,36 @@
+// app/admin/layout.tsx
+import type { ReactNode } from "react";
+import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
+import { authOptions } from "@/lib/auth";
 
-import { getServerSession } from 'next-auth';
-import { redirect } from 'next/navigation';
-import { authOptions } from '@/lib/auth';
-import AdminSidebar from '@/components/admin/admin-sidebar';
+export const dynamic = "force-dynamic";
 
-export default async function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+type Props = { children: ReactNode };
+
+export default async function AdminLayout({ children }: Props) {
   const session = await getServerSession(authOptions);
 
-  if (!session?.user || session.user.role !== 'ADMIN') {
-    redirect('/login');
+  // Lista de admins definida por variável de ambiente (separar por vírgula se tiver mais de um)
+  const allowed =
+    process.env.ADMIN_EMAILS?.split(",").map((s) => s.trim().toLowerCase()) ??
+    [];
+
+  const userEmail = session?.user?.email?.toLowerCase();
+
+  // Se a lista estiver vazia, libera somente se houver sessão.
+  // Se tiver emails na lista, exige que o email do usuário esteja nela.
+  const isAllowed =
+    !!userEmail && (allowed.length === 0 ? !!session : allowed.includes(userEmail));
+
+  if (!isAllowed) {
+    redirect("/login");
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="flex">
-        <AdminSidebar />
-        <main className="flex-1 lg:ml-64">
-          <div className="p-6">
-            {children}
-          </div>
-        </main>
-      </div>
+      {/* Se você tiver um sidebar de admin, importe e coloque aqui */}
+      <main className="mx-auto max-w-6xl p-4 md:p-8">{children}</main>
     </div>
   );
 }
