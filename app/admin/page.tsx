@@ -6,20 +6,12 @@ function currencyBRL(n: number) {
 }
 
 export default async function ClientesPage() {
-  // Busca usuários, contagem de pedidos e os pedidos (para somar total)
+  // Busca usuários e seus pedidos (sem _count, para evitar divergência de schema)
   const users = await prisma.user.findMany({
     include: {
-      _count: {
-        select: {
-          // ⚠️ Deixe apenas os relacionamentos que existem no modelo User
-          orders: true,
-        },
-      },
       orders: {
-        select: {
-          total: true,
-          createdAt: true,
-        },
+        select: { total: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
       },
     },
     orderBy: { createdAt: "desc" },
@@ -28,18 +20,17 @@ export default async function ClientesPage() {
 
   const rows = users.map((u) => {
     const receita = u.orders.reduce((sum, o) => sum + Number(o.total ?? 0), 0);
-    const ultimoPedido = u.orders
-      .map((o) => o.createdAt)
-      .filter(Boolean)
-      .sort((a, b) => (b!.getTime() - a!.getTime()))[0];
+    const ultimoPedido = u.orders[0]?.createdAt;
 
     return {
       id: u.id,
       nome: u.fullName ?? "-",
       email: u.email ?? "-",
-      pedidos: u._count.orders,
+      pedidos: u.orders.length,
       receita,
-      criadoEm: u.createdAt ? new Date(u.createdAt).toLocaleDateString("pt-BR") : "-",
+      criadoEm: u.createdAt
+        ? new Date(u.createdAt).toLocaleDateString("pt-BR")
+        : "-",
       ultimoPedido: ultimoPedido
         ? new Date(ultimoPedido).toLocaleDateString("pt-BR")
         : "-",
