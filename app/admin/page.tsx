@@ -6,7 +6,7 @@ function currencyBRL(n: number) {
 }
 
 export default async function ClientesPage() {
-  // Sem _count. Pegamos apenas os pedidos e calculamos no código.
+  // Sem _count e sem "products"
   const users = await prisma.user.findMany({
     include: {
       orders: {
