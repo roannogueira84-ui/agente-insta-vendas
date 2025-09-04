@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-a
+
 export default async function ClientesPage() {
   const users = await prisma.user.findMany({
     orderBy: { createdAt: 'desc' },
