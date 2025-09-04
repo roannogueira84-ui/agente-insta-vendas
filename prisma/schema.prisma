@@ -1,24 +1,33 @@
+// prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql" // ou "mysql" dependendo do que você configurou no .env
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+enum OrderStatus {
+  PENDING
+  PAID
+  CANCELED
+}
+
+/* ===== MODELS ===== */
 
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
   fullName  String
-  password  String
+  password  String?
   image     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relacionamentos
-  orders    Order[]
-  products  Product[]   // <- Adicionado para resolver o erro
+  orders   Order[]
+  products Product[]
 }
 
 model Product {
@@ -26,10 +35,12 @@ model Product {
   name        String
   description String?
   price       Float
-  userId      String?
-  user        User?    @relation(fields: [userId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  image       String?
+  userId      String?   // opcional: dono do produto
+  user        User?     @relation(fields: [userId], references: [id])
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model Order {
@@ -45,17 +56,8 @@ model Order {
 model OrderItem {
   id        String   @id @default(uuid())
   orderId   String
-  productId String
   order     Order    @relation(fields: [orderId], references: [id])
-  product   Product  @relation(fields: [productId], references: [id])
-  quantity  Int
+  name      String
   price     Float
-}
-
-enum OrderStatus {
-  PENDING
-  PAID
-  SHIPPED
-  COMPLETED
-  CANCELLED
+  quantity  Int
 }
