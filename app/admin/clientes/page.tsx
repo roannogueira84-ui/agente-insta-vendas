@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-
+a
 export default async function ClientesPage() {
   const users = await prisma.user.findMany({
     orderBy: { createdAt: 'desc' },
@@ -7,9 +7,15 @@ export default async function ClientesPage() {
       // Contagem de pedidos por usuário
       _count: { select: { orders: true } },
 
-      // Último pedido (se existir)
+      // Último pedido (se existir) + itens para calcular o total
       orders: {
-        select: { id: true, total: true, createdAt: true },
+        select: {
+          id: true,
+          createdAt: true,
+          orderItems: {
+            select: { price: true, quantity: true },
+          },
+        },
         orderBy: { createdAt: 'desc' },
         take: 1,
       },
@@ -33,17 +39,27 @@ export default async function ClientesPage() {
         <tbody>
           {users.map((u) => {
             const last = u.orders[0];
-            const lastTotal =
-              last?.total != null ? String(last.total) : '-';
-            const lastDate =
-              last?.createdAt ? new Date(last.createdAt).toLocaleString('pt-BR') : '-';
+
+            // Calcula o total do último pedido somando (price * quantity)
+            const lastTotal = last
+              ? last.orderItems.reduce((sum, it) => {
+                  const price = typeof it.price === 'number' ? it.price : Number(it.price);
+                  return sum + price * it.quantity;
+                }, 0).toFixed(2)
+              : '-';
+
+            const lastDate = last?.createdAt
+              ? new Date(last.createdAt).toLocaleString('pt-BR')
+              : '-';
 
             return (
               <tr key={u.id}>
                 <td style={td}>{u.fullName ?? '-'}</td>
                 <td style={td}>{u.email ?? '-'}</td>
                 <td style={td}>{u._count.orders}</td>
-                <td style={td}>{lastTotal}</td>
+                <td style={td}>
+                  {last ? `R$ ${lastTotal}` : '-'}
+                </td>
                 <td style={td}>{lastDate}</td>
               </tr>
             );
