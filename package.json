@@ -1,33 +1,30 @@
 {
   "name": "agente-insta-vendas",
-  "private": true,
   "version": "1.0.0",
+  "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate --schema prisma/schema.prisma && next build",
     "start": "next start",
+    "lint": "next lint",
     "postinstall": "prisma generate --schema prisma/schema.prisma"
   },
   "dependencies": {
-    "@prisma/client": "6.7.0",
-    "lucide-react": "^0.462.0",
+    "@prisma/client": "^6.7.0",
+    "bcryptjs": "^2.4.3",
     "next": "14.2.3",
-    "next-auth": "^4.24.8",
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
-    "sonner": "^1.5.0",
-    "zod": "^3.23.8"
+    "next-auth": "^4.24.7",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@types/node": "^20.14.12",
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
-    "autoprefixer": "^10.4.19",
+    "autoprefixer": "^10.4.15",
     "eslint": "8.57.0",
     "eslint-config-next": "14.2.3",
-    "postcss": "^8.4.38",
-    "prisma": "6.7.0",
-    "tailwindcss": "^3.4.10",
-    "typescript": "5.6.3"
+    "postcss": "^8.4.27",
+    "prisma": "^6.7.0",
+    "tailwindcss": "^3.3.3",
+    "typescript": "^5.3.3"
   }
 }
