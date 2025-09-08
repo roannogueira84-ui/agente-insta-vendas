@@ -1,18 +1,14 @@
 // src/lib/prisma.ts
 import { PrismaClient } from "@prisma/client";
 
-declare global {
-  // Impede recriar muitas instâncias em dev (Next.js hot reload)
-  // eslint-disable-next-line no-var
-  var prisma: PrismaClient | undefined;
-}
+const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
 export const prisma =
-  global.prisma ??
+  globalForPrisma.prisma ??
   new PrismaClient({
-    log: ["error", "warn"], // pode trocar para ["query", "info", "warn", "error"] se quiser debugar mais
+    log: process.env.NODE_ENV === "production" ? ["error"] : ["query", "error", "warn"],
   });
 
 if (process.env.NODE_ENV !== "production") {
-  global.prisma = prisma;
+  globalForPrisma.prisma = prisma;
 }
