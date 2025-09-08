@@ -16,37 +16,36 @@ datasource db {
 // ========================================
 model User {
   id        String   @id @default(cuid())
+  email     String   @unique
   name      String?
-  email     String?  @unique
   image     String?
-
-  // Relações do app
-  products  Product[]
-  orders    Order[]
-  // Configuração de meio de pagamento (1-para-1)
-  paymentConfig PaymentConfig?
-
-  // NextAuth
-  accounts  Account[]
-  sessions  Session[]
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // seus relacionamentos já existentes:
+  products Product[]
+  orders   Order[]
+
+  // ✅ RELAÇÃO INVERSA QUE FALTAVA
+  paymentLinks  PaymentLink[]
+  Account       Account[]
+  Session       Session[]
+  PaymentConfig PaymentConfig[]
 }
 
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?
-  access_token       String?
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?
-  session_state      String?
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -74,53 +73,53 @@ model VerificationToken {
 // MODELOS DE NEGÓCIO
 // ========================================
 model Product {
-  id          String   @id @default(cuid())
+  id String @id @default(cuid())
 
   // relação com usuário (DONO do produto)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   name        String
-  price       Decimal  @db.Decimal(10, 2)
+  price       Decimal @db.Decimal(10, 2)
   description String?
 
   // Use "image" no código. Deixo imageUrl opcional
   // para compatibilizar com código antigo, se existir.
-  image       String?
-  imageUrl    String?
+  image    String?
+  imageUrl String?
 
   // Relacionamentos derivados
   paymentLinks PaymentLink[]
   orderItems   OrderItem[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model PaymentLink {
-  id        String   @id @default(cuid())
+  id String @id @default(cuid())
 
   // dono do link (usuário)
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // produto ao qual o link pertence
   productId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  url       String
-  isActive  Boolean  @default(true)
+  url      String
+  isActive Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  orders    Order[]
+  orders Order[]
 }
 
 model PaymentConfig {
   // 1 registro por usuário
-  userId    String   @id
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @id
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Ex.: "mercadopago", "pagseguro"
   provider  String?
@@ -133,35 +132,35 @@ model PaymentConfig {
 }
 
 model Order {
-  id            String      @id @default(cuid())
+  id String @id @default(cuid())
 
-  userId        String
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // opcionalmente associada a um PaymentLink
   paymentLinkId String?
   paymentLink   PaymentLink? @relation(fields: [paymentLinkId], references: [id])
 
-  status        OrderStatus @default(PENDING)
-  total         Decimal     @db.Decimal(10, 2)
+  status OrderStatus @default(PENDING)
+  total  Decimal     @db.Decimal(10, 2)
 
-  items         OrderItem[]
+  items OrderItem[]
 
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model OrderItem {
-  id        String   @id @default(cuid())
+  id String @id @default(cuid())
 
-  orderId   String
-  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   productId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
 
-  quantity  Int      @default(1)
-  price     Decimal  @db.Decimal(10, 2)
+  quantity Int     @default(1)
+  price    Decimal @db.Decimal(10, 2)
 }
 
 // ========================================
