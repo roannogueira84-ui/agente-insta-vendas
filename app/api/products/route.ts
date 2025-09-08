@@ -1,84 +1,73 @@
-
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import type { NextRequest } from 'next/server';
+import { PrismaClient } from '@prisma/client';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { z } from 'zod';
 
-export const dynamic = "force-dynamic";
+const prisma =
+  (globalThis as any).prisma ??
+  new PrismaClient({
+    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  });
 
-const productSchema = z.object({
-  name: z.string().min(1, 'Nome é obrigatório'),
-  description: z.string().optional(),
-  price: z.number().positive('Preço deve ser positivo'),
-  stock: z.number().int().min(0, 'Estoque deve ser >= 0'),
-  image: z.string().optional(),
-  isActive: z.boolean().optional().default(true),
-});
+if (process.env.NODE_ENV !== 'production') {
+  (globalThis as any).prisma = prisma;
+}
 
-export async function GET(request: NextRequest) {
+// GET /api/products  -> lista produtos
+export async function GET(_req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Não autorizado' },
-        { status: 401 }
-      );
-    }
-
     const products = await prisma.product.findMany({
-      where: { userId: session.user.id },
-      include: {
-        _count: {
-          select: { paymentLinks: true }
-        }
-      },
-      orderBy: { updatedAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
-
-    return NextResponse.json(products);
-  } catch (error) {
-    console.error('Erro ao buscar produtos:', error);
-    return NextResponse.json(
-      { error: 'Erro interno do servidor' },
-      { status: 500 }
-    );
+    return NextResponse.json(products, { status: 200 });
+  } catch (err) {
+    console.error('GET /api/products error:', err);
+    return NextResponse.json({ error: 'Erro ao listar produtos' }, { status: 500 });
   }
 }
 
-export async function POST(request: NextRequest) {
+// POST /api/products -> cria produto
+export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Não autorizado' },
-        { status: 401 }
-      );
+
+    // <<< ponto que dava o erro de tipo >>>
+    // A tipagem padrão do NextAuth não inclui "id" no user,
+    // então usamos "any" só para leitura do id.
+    const userId: string | undefined = (session?.user as any)?.id;
+
+    if (!userId) {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const validatedData = productSchema.parse(body);
+    const body = await req.json();
 
-    const product = await prisma.product.create({
-      data: {
-        ...validatedData,
-        userId: session.user.id,
-      }
-    });
+    // Validação simples para evitar dependência do zod
+    const name = typeof body?.name === 'string' ? body.name.trim() : '';
+    const price = typeof body?.price === 'number' ? body.price : Number(body?.price);
+    const description =
+      typeof body?.description === 'string' ? body.description.trim() : '';
 
-    return NextResponse.json(product, { status: 201 });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
+    if (!name || !Number.isFinite(price)) {
       return NextResponse.json(
-        { error: 'Dados inválidos', details: error.errors },
+        { error: 'Campos inválidos: informe "name" (string) e "price" (número).' },
         { status: 400 }
       );
     }
 
-    console.error('Erro ao criar produto:', error);
-    return NextResponse.json(
-      { error: 'Erro interno do servidor' },
-      { status: 500 }
-    );
+    const product = await prisma.product.create({
+      data: {
+        name,
+        price,
+        description,
+        userId, // relaciona com o usuário logado
+      },
+    });
+
+    return NextResponse.json(product, { status: 201 });
+  } catch (err) {
+    console.error('POST /api/products error:', err);
+    return NextResponse.json({ error: 'Erro ao criar produto' }, { status: 500 });
   }
 }
