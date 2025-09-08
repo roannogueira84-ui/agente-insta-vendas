@@ -1,66 +1,56 @@
-// app/admin/pedidos/page.tsx
-import { prisma } from '@/lib/prisma';
+import prisma from "@/lib/prisma";
+import { Decimal } from "@prisma/client/runtime/library";
 
-export default async function PedidosPage() {
+export default async function AdminOrdersPage() {
   const orders = await prisma.order.findMany({
-    orderBy: { createdAt: 'desc' },
+    orderBy: { createdAt: "desc" },
     include: {
-      user: { select: { fullName: true, email: true } },
-      items: { select: { name: true, price: true, quantity: true } }, // <- aqui é "items"
+      user: { select: { name: true, email: true } }, // <-- trocado de fullName para name
+      items: { select: { name: true, price: true, quantity: true } },
     },
+    take: 100,
   });
 
-  return (
-    <main style={{ padding: 24 }}>
-      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 16 }}>Pedidos</h1>
+  const td: React.CSSProperties = { padding: 8, border: "1px solid #ddd" };
 
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+  return (
+    <div>
+      <h1>Pedidos</h1>
+
+      <table style={{ borderCollapse: "collapse", width: "100%", marginTop: 16 }}>
         <thead>
           <tr>
-            <th style={th}>Pedido</th>
-            <th style={th}>Cliente</th>
-            <th style={th}>E-mail</th>
-            <th style={th}>Itens</th>
-            <th style={th}>Total</th>
-            <th style={th}>Status</th>
-            <th style={th}>Criado em</th>
+            <th style={td}>Data</th>
+            <th style={td}>Cliente</th>
+            <th style={td}>Email</th>
+            <th style={td}>Itens</th>
+            <th style={td}>Total</th>
           </tr>
         </thead>
         <tbody>
           {orders.map((o) => {
             const total = o.items.reduce((sum, it) => {
-              const price = typeof it.price === 'number' ? it.price : Number(it.price);
+              const price =
+                it.price instanceof Decimal ? Number(it.price) : Number(it.price as unknown as number);
               return sum + price * it.quantity;
             }, 0);
 
             return (
               <tr key={o.id}>
-                <td style={td}>{o.id.slice(0, 8)}</td>
-                <td style={td}>{o.user?.fullName ?? '-'}</td>
-                <td style={td}>{o.user?.email ?? '-'}</td>
                 <td style={td}>
-                  {o.items.map((i) => `${i.name} x${i.quantity}`).join(', ')}
+                  {new Date(o.createdAt).toLocaleString("pt-BR")}
+                </td>
+                <td style={td}>{o.user?.name ?? "-"}</td>
+                <td style={td}>{o.user?.email ?? "-"}</td>
+                <td style={td}>
+                  {o.items.map((i) => `${i.quantity}x ${i.name}`).join(", ")}
                 </td>
                 <td style={td}>{`R$ ${total.toFixed(2)}`}</td>
-                <td style={td}>{o.status}</td>
-                <td style={td}>{new Date(o.createdAt).toLocaleString('pt-BR')}</td>
               </tr>
             );
           })}
         </tbody>
       </table>
-    </main>
+    </div>
   );
 }
-
-const th: React.CSSProperties = {
-  textAlign: 'left',
-  borderBottom: '1px solid #e5e7eb',
-  padding: '8px 12px',
-  fontWeight: 600,
-};
-
-const td: React.CSSProperties = {
-  borderBottom: '1px solid #f1f5f9',
-  padding: '8px 12px',
-};
