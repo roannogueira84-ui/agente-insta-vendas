@@ -1,75 +1,83 @@
-// app/admin/page.tsx
-import { prisma } from '@/lib/prisma';
+import prisma from "@/lib/prisma";
+import { Decimal } from "@prisma/client/runtime/library";
 
-export default async function AdminHome() {
+export default async function AdminHomePage() {
+  // Busca usuários com contagem e pedidos
   const users = await prisma.user.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: {
+    select: {
+      id: true,
+      name: true,            // <-- usamos "name" em vez de fullName
+      email: true,
+      image: true,
+      createdAt: true,
+      updatedAt: true,
       _count: { select: { orders: true } },
       orders: {
+        orderBy: { createdAt: "desc" },
+        take: 1, // só o último pedido
         select: {
           id: true,
           createdAt: true,
-          // Pegamos os itens para calcular o total
-          items: { select: { price: true, quantity: true } },
+          items: {
+            select: {
+              price: true,      // Decimal
+              quantity: true,
+            },
+          },
         },
-        orderBy: { createdAt: 'desc' },
-        take: 1,
       },
     },
+    orderBy: { createdAt: "desc" },
   });
 
-  return (
-    <main style={{ padding: 24 }}>
-      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 16 }}>Dashboard</h1>
+  const td: React.CSSProperties = {
+    padding: "8px",
+    border: "1px solid #ddd",
+  };
 
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+  return (
+    <div>
+      <h1>Admin</h1>
+      <h2 style={{ margin: "16px 0" }}>Últimos clientes</h2>
+
+      <table style={{ borderCollapse: "collapse", width: "100%" }}>
         <thead>
           <tr>
-            <th style={th}>Cliente</th>
-            <th style={th}>E-mail</th>
-            <th style={th}>Qtd. Pedidos</th>
-            <th style={th}>Último Total</th>
-            <th style={th}>Última Compra</th>
+            <th style={td}>Nome</th>
+            <th style={td}>Email</th>
+            <th style={td}>Pedidos</th>
+            <th style={td}>Último pedido</th>
+            <th style={td}>Valor do último</th>
           </tr>
         </thead>
         <tbody>
           {users.map((u) => {
-            const last = u.orders[0];
+            const lastOrder = u.orders[0];
 
-            const lastTotal = last
-              ? last.items.reduce((sum, it) => {
-                  const price = typeof it.price === 'number' ? it.price : Number(it.price);
-                  return sum + price * it.quantity;
-                }, 0)
-              : null;
+            const lastTotal =
+              lastOrder?.items.reduce((sum, it) => {
+                const price = it.price instanceof Decimal ? Number(it.price) : Number(it.price as unknown as number);
+                return sum + price * it.quantity;
+              }, 0) ?? null;
 
             return (
               <tr key={u.id}>
-                <td style={td}>{u.fullName ?? '-'}</td>
-                <td style={td}>{u.email ?? '-'}</td>
+                <td style={td}>{u.name ?? "-"}</td>
+                <td style={td}>{u.email ?? "-"}</td>
                 <td style={td}>{u._count.orders}</td>
-                <td style={td}>{lastTotal !== null ? `R$ ${lastTotal.toFixed(2)}` : '-'}</td>
                 <td style={td}>
-                  {last?.createdAt ? new Date(last.createdAt).toLocaleString('pt-BR') : '-'}
+                  {lastOrder
+                    ? new Date(lastOrder.createdAt).toLocaleDateString("pt-BR")
+                    : "-"}
+                </td>
+                <td style={td}>
+                  {lastTotal !== null ? `R$ ${lastTotal.toFixed(2)}` : "-"}
                 </td>
               </tr>
             );
           })}
         </tbody>
       </table>
-    </main>
+    </div>
   );
 }
-
-const th: React.CSSProperties = {
-  textAlign: 'left',
-  borderBottom: '1px solid #e5e7eb',
-  padding: '8px 12px',
-  fontWeight: 600,
-};
-
-const td: React.CSSProperties = {
-  borderBottom: '1px solid #f1f5f9',
-  padding: '8px 12px',
-};
