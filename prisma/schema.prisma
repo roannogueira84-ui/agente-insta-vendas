@@ -31,16 +31,15 @@ model User {
 }
 
 model Product {
-  id          String   @id @default(uuid())
+  id          String   @id @default(cuid())
   name        String
+  price       Decimal
   description String?
-  price       Float
-  image       String?
-  userId      String?   // opcional: dono do produto
-  user        User?     @relation(fields: [userId], references: [id])
-
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  // image      String?   // << pode ser esse o nome
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId      String
+  // paymentLinks PaymentLink[]  // se existir relação
 }
 
 model Order {
