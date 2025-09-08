@@ -11,15 +11,13 @@ export default async function ProdutosPage() {
 
   if (!userId) return null;
 
-  // Removido isActive do select (não existe no schema)
+  // Removido paymentLinks do select (não existe no schema)
   const products = await prisma.product.findMany({
     where: { userId },
     select: {
       id: true,
       name: true,
       price: true,
-      paymentLinks: { select: { id: true } },
-      // se no futuro você adicionar isActive no schema, dá pra voltar a selecionar aqui
     },
     orderBy: { createdAt: "desc" },
   });
@@ -47,7 +45,6 @@ export default async function ProdutosPage() {
               <div>
                 <div className="font-medium">{p.name}</div>
                 <div className="text-sm text-muted-foreground">
-                  Links de pagamento: {p.paymentLinks.length} •{" "}
                   Preço:{" "}
                   {typeof p.price === "number"
                     ? `R$ ${p.price.toFixed(2)}`
