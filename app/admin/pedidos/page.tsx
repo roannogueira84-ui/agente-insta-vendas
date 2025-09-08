@@ -39,4 +39,34 @@ export default async function AdminPedidosPage() {
                 <th className="text-left px-4 py-3">Data</th>
                 <th className="text-left px-4 py-3">Cliente</th>
                 <th className="text-left px-4 py-3">Email</th>
-                <th className="
+                <th className="text-left px-4 py-3">Itens</th>
+                <th className="text-left px-4 py-3">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orders.map((o) => {
+                const total = o.items.reduce((acc, it) => {
+                  return acc + toNumber(it.price) * (it.quantity ?? 0);
+                }, 0);
+
+                return (
+                  <tr key={o.id} className="border-t">
+                    <td className="px-4 py-3">
+                      {new Date(o.createdAt).toLocaleString("pt-BR")}
+                    </td>
+                    <td className="px-4 py-3">{o.user?.name ?? "-"}</td>
+                    <td className="px-4 py-3">{o.user?.email ?? "-"}</td>
+                    <td className="px-4 py-3">{o.items.length}</td>
+                    <td className="px-4 py-3 font-medium">
+                      {formatPrice(total)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
