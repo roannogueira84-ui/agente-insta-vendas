@@ -1,64 +1,77 @@
-// app/dashboard/produtos/page.tsx
-import Link from "next/link";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import prisma from "@/lib/prisma";
-import { Button } from "@/components/ui/button";
+"use client";
 
-export default async function ProdutosPage() {
-  const session = await getServerSession(authOptions);
-  const userId = session?.user?.id;
+import { useEffect, useState } from "react";
+import { Decimal } from "@prisma/client/runtime/library";
 
-  if (!userId) return null;
+type Product = {
+  id: string;
+  name: string;
+  description: string | null;
+  price: string | number | Decimal;
+  imageUrl: string | null;
+  createdAt: string;
+};
 
-  // Removido paymentLinks do select (não existe no schema)
-  const products = await prisma.product.findMany({
-    where: { userId },
-    select: {
-      id: true,
-      name: true,
-      price: true,
-    },
-    orderBy: { createdAt: "desc" },
-  });
+function formatPrice(price: unknown) {
+  if (price instanceof Decimal) return `R$ ${price.toNumber().toFixed(2)}`;
+  if (typeof price === "number") return `R$ ${price.toFixed(2)}`;
+  if (typeof price === "string") {
+    const n = Number(price);
+    return isNaN(n) ? price : `R$ ${n.toFixed(2)}`;
+  }
+  return "";
+}
+
+export default function ProdutosPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    async function fetchProducts() {
+      try {
+        const res = await fetch("/api/public/products");
+        if (!res.ok) throw new Error("Erro ao carregar produtos");
+        const data = await res.json();
+        setProducts(data);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+    fetchProducts();
+  }, []);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Produtos</h1>
-        <Link href="/dashboard/produtos/novo">
-          <Button variant="outline">Novo produto</Button>
-        </Link>
-      </div>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">Produtos</h1>
 
       {products.length === 0 ? (
-        <div className="rounded border p-4 text-sm text-muted-foreground">
-          Você ainda não tem produtos. Clique em “Novo produto” para criar.
-        </div>
+        <p className="text-muted-foreground">Nenhum produto cadastrado.</p>
       ) : (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {products.map((p) => (
             <div
               key={p.id}
-              className="flex items-center justify-between rounded border p-4"
+              className="border rounded-lg shadow p-4 flex flex-col gap-2"
             >
-              <div>
-                <div className="font-medium">{p.name}</div>
-                <div className="text-sm text-muted-foreground">
-                  Preço:{" "}
-                  {typeof p.price === "number"
-                    ? `R$ ${p.price.toFixed(2)}`
-                    : p.price}
-                </div>
+              {p.imageUrl && (
+                <img
+                  src={p.imageUrl}
+                  alt={p.name}
+                  className="w-full h-40 object-cover rounded"
+                />
+              )}
+
+              <h2 className="text-lg font-semibold">{p.name}</h2>
+
+              <p className="text-sm text-muted-foreground">
+                {p.description ?? "Sem descrição"}
+              </p>
+
+              <div className="text-sm text-muted-foreground">
+                Preço: {formatPrice(p.price)}
               </div>
 
-              <div className="flex gap-2">
-                <Link href={`/dashboard/produtos/${p.id}`}>
-                  <Button variant="outline">Detalhes</Button>
-                </Link>
-                <Link href={`/dashboard/produtos/${p.id}/editar`}>
-                  <Button variant="outline">Editar</Button>
-                </Link>
+              <div className="text-xs text-gray-400 mt-2">
+                Criado em: {new Date(p.createdAt).toLocaleDateString("pt-BR")}
               </div>
             </div>
           ))}
