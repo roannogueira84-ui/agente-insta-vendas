@@ -1,12 +1,11 @@
 // app/dashboard/produtos/page.tsx
-import { prisma } from "@/src/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 
-export const dynamic = "force-dynamic"; // evita cache em prod/preview
+export const dynamic = "force-dynamic";
 
 export default async function ProdutosPage() {
-  // ⚠️ ESTE ARQUIVO NÃO DEVE TER "use client"
-  // Busque somente campos serializáveis
+  // ESTE ARQUIVO NÃO DEVE TER "use client"
   const products = await prisma.product.findMany({
     where: {},
     select: {
@@ -23,7 +22,6 @@ export default async function ProdutosPage() {
     <main className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Produtos</h1>
-        {/* Link simples (sem onClick) para manter server-only aqui */}
         <Link
           href="/dashboard/produtos/novo"
           className="inline-flex items-center rounded-md border px-3 py-2 text-sm hover:bg-gray-50"
@@ -52,16 +50,10 @@ export default async function ProdutosPage() {
                 </div>
 
                 <div className="flex gap-2">
-                  <Link
-                    href={`/dashboard/produtos/${p.id}`}
-                    className="text-sm underline"
-                  >
+                  <Link href={`/dashboard/produtos/${p.id}`} className="text-sm underline">
                     Detalhes
                   </Link>
-                  <Link
-                    href={`/dashboard/produtos/${p.id}/editar`}
-                    className="text-sm underline"
-                  >
+                  <Link href={`/dashboard/produtos/${p.id}/editar`} className="text-sm underline">
                     Editar
                   </Link>
                 </div>
