@@ -1,21 +1,18 @@
 // src/lib/prisma.ts
-import "server-only";
 import { PrismaClient } from "@prisma/client";
 
-// Evita múltiplas instâncias em dev (hot reload)
-const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+declare global {
+  // Impede recriar muitas instâncias em dev (Next.js hot reload)
+  // eslint-disable-next-line no-var
+  var prisma: PrismaClient | undefined;
+}
 
 export const prisma =
-  globalForPrisma.prisma ??
+  global.prisma ??
   new PrismaClient({
-    // log: ["query"], // opcional para depuração
+    log: ["error", "warn"], // pode trocar para ["query", "info", "warn", "error"] se quiser debugar mais
   });
 
 if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
+  global.prisma = prisma;
 }
-
-// ✅ Isso permite ambos:
-// import { prisma } from "@/lib/prisma"
-// import prisma from "@/lib/prisma"
-export default prisma;
