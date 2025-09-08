@@ -4,17 +4,15 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 
-// Garante que a página seja gerada no servidor a cada request (sem cache)
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const runtime = "nodejs";
 
 type PageProps = { params: { id: string } };
 
-// Helper para converter Decimal | number | string -> number
+// Converte Prisma Decimal | number | string -> number
 function toNumber(v: unknown): number | null {
-  // Prisma Decimal vem com toNumber()
-  // @ts-ignore - runtime check
+  // @ts-ignore
   if (v && typeof v === "object" && typeof (v as any).toNumber === "function") {
     try {
       return (v as any).toNumber();
@@ -30,21 +28,28 @@ function toNumber(v: unknown): number | null {
   return null;
 }
 
-// Uma única função para buscar o link + produto
-async function getPaymentLink(id: string) {
-  return prisma.paymentLink.findUnique({
+async function getLinkByAny(id: string) {
+  // 1) tenta PaymentLink.id
+  let link = await prisma.paymentLink.findUnique({
     where: { id },
-    include: {
-      product: true,
-      user: true,
-    },
+    include: { product: true, user: true },
   });
+  if (link) return { link, from: "paymentLink.id" };
+
+  // 2) fallback: tenta pelo productId (se colou o ID do produto por engano)
+  link = await prisma.paymentLink.findFirst({
+    where: { productId: id },
+    include: { product: true, user: true },
+  });
+  if (link) return { link, from: "paymentLink.productId" };
+
+  return { link: null as const, from: null as const };
 }
 
 export async function generateMetadata(
   { params }: PageProps
 ): Promise<Metadata> {
-  const link = await getPaymentLink(params.id);
+  const { link } = await getLinkByAny(params.id);
 
   if (!link || !link.product) {
     return { title: "Produto não encontrado" };
@@ -68,10 +73,11 @@ export async function generateMetadata(
 export default async function LojaPage({ params }: PageProps) {
   const { id } = params;
 
-  const link = await getPaymentLink(id);
+  const { link, from } = await getLinkByAny(id);
+
+  console.log("[/loja/[id]]", { id, found: !!link, from });
 
   if (!link || !link.product) {
-    // Se não achar, devolve 404 real (evita 404 “genérico” do Vercel)
     notFound();
   }
 
@@ -106,19 +112,21 @@ export default async function LojaPage({ params }: PageProps) {
             <div className="text-2xl font-semibold">{priceLabel}</div>
           </div>
 
-          {/* Botão de ação (se você já gera link de pagamento externo, substitua o href) */}
           <a
-            href={`#comprar-${id}`}
+            href={`#comprar-${link.id}`}
             className="inline-block rounded bg-black px-5 py-3 text-white hover:opacity-90"
           >
             Comprar agora
           </a>
 
-          {/* Bloco de debug opcional: comente se não quiser exibir */}
+          {/* Debug opcional — pode remover depois */}
           <pre className="mt-6 overflow-auto rounded bg-neutral-100 p-3 text-xs">
             {JSON.stringify(
               {
+                usedParam: id,
+                matchedBy: from,
                 paymentLinkId: link.id,
+                productId: link.productId,
                 userId: link.userId,
                 product: {
                   id: p.id,
