@@ -1,28 +1,25 @@
-// lib/auth.ts
-import { getServerSession, type NextAuthOptions } from "next-auth";
+import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
   ],
-  session: { strategy: "jwt" },
+  pages: {
+    signIn: "/login", // se você quiser uma página customizada
+  },
   callbacks: {
     async session({ session, token }) {
-      // garante que session.user.id exista (tipos já foram aumentados em types/next-auth.d.ts)
-      if (session.user && token?.sub) {
-        (session.user as any).id = token.sub;
+      if (session.user) {
+        // adiciona o id do usuário na sessão
+        // @ts-ignore
+        session.user.id = token.sub ?? "";
       }
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET, // necessário para produção
 };
-
-// Helper pra usar no servidor
-export function auth() {
-  return getServerSession(authOptions);
-}
