@@ -1,61 +1,42 @@
-import prisma from "@/lib/prisma";
+/* app/admin/pedidos/page.tsx */
 import { Decimal } from "@prisma/client/runtime/library";
+import prisma from "@/lib/prisma";
 
-export default async function AdminOrdersPage() {
+function toNumber(d: unknown) {
+  if (d instanceof Decimal) return d.toNumber();
+  if (typeof d === "number") return d;
+  if (typeof d === "string") return Number(d);
+  return 0;
+}
+
+function formatPrice(v: unknown) {
+  const n = toNumber(v);
+  return `R$ ${n.toFixed(2)}`;
+}
+
+export default async function AdminPedidosPage() {
   const orders = await prisma.order.findMany({
     orderBy: { createdAt: "desc" },
     include: {
-      user: { select: { name: true, email: true } },
-      // OrderItem não tem "name"; buscamos via relação com Product
-      items: {
-        include: {
-          product: { select: { name: true } },
-        },
-      },
+      user: { select: { name: true, email: true } }, // ✅ existe no schema
+      // ⚠️ Em OrderItem não usamos "name" (não existe). Só price e quantity.
+      items: { select: { price: true, quantity: true } },
     },
     take: 100,
   });
 
-  const td: React.CSSProperties = { padding: 8, border: "1px solid #ddd" };
-
   return (
-    <div>
-      <h1>Pedidos</h1>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-6">Pedidos</h1>
 
-      <table style={{ borderCollapse: "collapse", width: "100%", marginTop: 16 }}>
-        <thead>
-          <tr>
-            <th style={td}>Data</th>
-            <th style={td}>Cliente</th>
-            <th style={td}>Email</th>
-            <th style={td}>Itens</th>
-            <th style={td}>Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {orders.map((o) => {
-            const total = o.items.reduce((sum, it) => {
-              const price =
-                it.price instanceof Decimal ? Number(it.price) : Number(it.price as unknown as number);
-              return sum + price * it.quantity;
-            }, 0);
-
-            return (
-              <tr key={o.id}>
-                <td style={td}>{new Date(o.createdAt).toLocaleString("pt-BR")}</td>
-                <td style={td}>{o.user?.name ?? "-"}</td>
-                <td style={td}>{o.user?.email ?? "-"}</td>
-                <td style={td}>
-                  {o.items
-                    .map((i) => `${i.quantity}x ${i.product?.name ?? "Produto"}`)
-                    .join(", ")}
-                </td>
-                <td style={td}>{`R$ ${total.toFixed(2)}`}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
+      {orders.length === 0 ? (
+        <p className="text-muted-foreground">Nenhum pedido encontrado.</p>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border">
+          <table className="min-w-[720px] w-full text-sm">
+            <thead>
+              <tr className="bg-muted">
+                <th className="text-left px-4 py-3">Data</th>
+                <th className="text-left px-4 py-3">Cliente</th>
+                <th className="text-left px-4 py-3">Email</th>
+                <th className="
