@@ -5,8 +5,13 @@ export default async function AdminOrdersPage() {
   const orders = await prisma.order.findMany({
     orderBy: { createdAt: "desc" },
     include: {
-      user: { select: { name: true, email: true } }, // <-- trocado de fullName para name
-      items: { select: { name: true, price: true, quantity: true } },
+      user: { select: { name: true, email: true } },
+      // OrderItem não tem "name"; buscamos via relação com Product
+      items: {
+        include: {
+          product: { select: { name: true } },
+        },
+      },
     },
     take: 100,
   });
@@ -37,13 +42,13 @@ export default async function AdminOrdersPage() {
 
             return (
               <tr key={o.id}>
-                <td style={td}>
-                  {new Date(o.createdAt).toLocaleString("pt-BR")}
-                </td>
+                <td style={td}>{new Date(o.createdAt).toLocaleString("pt-BR")}</td>
                 <td style={td}>{o.user?.name ?? "-"}</td>
                 <td style={td}>{o.user?.email ?? "-"}</td>
                 <td style={td}>
-                  {o.items.map((i) => `${i.quantity}x ${i.name}`).join(", ")}
+                  {o.items
+                    .map((i) => `${i.quantity}x ${i.product?.name ?? "Produto"}`)
+                    .join(", ")}
                 </td>
                 <td style={td}>{`R$ ${total.toFixed(2)}`}</td>
               </tr>
