@@ -1,82 +1,75 @@
-"use client";
+// app/dashboard/produtos/page.tsx
+import { prisma } from "@/src/lib/prisma";
+import Link from "next/link";
 
-import { useEffect, useState } from "react";
-import { Decimal } from "@prisma/client/runtime/library";
+export const dynamic = "force-dynamic"; // evita cache em prod/preview
 
-type Product = {
-  id: string;
-  name: string;
-  description: string | null;
-  price: string | number | Decimal;
-  imageUrl: string | null;
-  createdAt: string;
-};
-
-function formatPrice(price: unknown) {
-  if (price instanceof Decimal) return `R$ ${price.toNumber().toFixed(2)}`;
-  if (typeof price === "number") return `R$ ${price.toFixed(2)}`;
-  if (typeof price === "string") {
-    const n = Number(price);
-    return isNaN(n) ? price : `R$ ${n.toFixed(2)}`;
-  }
-  return "";
-}
-
-export default function ProdutosPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-
-  useEffect(() => {
-    async function fetchProducts() {
-      try {
-        const res = await fetch("/api/public/products");
-        if (!res.ok) throw new Error("Erro ao carregar produtos");
-        const data = await res.json();
-        setProducts(data);
-      } catch (error) {
-        console.error(error);
-      }
-    }
-    fetchProducts();
-  }, []);
+export default async function ProdutosPage() {
+  // ⚠️ ESTE ARQUIVO NÃO DEVE TER "use client"
+  // Busque somente campos serializáveis
+  const products = await prisma.product.findMany({
+    where: {},
+    select: {
+      id: true,
+      name: true,
+      price: true, // Decimal | number
+      createdAt: true,
+    },
+    orderBy: { createdAt: "desc" },
+    take: 100,
+  });
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Produtos</h1>
+    <main className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Produtos</h1>
+        {/* Link simples (sem onClick) para manter server-only aqui */}
+        <Link
+          href="/dashboard/produtos/novo"
+          className="inline-flex items-center rounded-md border px-3 py-2 text-sm hover:bg-gray-50"
+        >
+          Novo produto
+        </Link>
+      </div>
 
       {products.length === 0 ? (
-        <p className="text-muted-foreground">Nenhum produto cadastrado.</p>
+        <p className="text-sm text-gray-500">Nenhum produto cadastrado ainda.</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.map((p) => (
-            <div
-              key={p.id}
-              className="border rounded-lg shadow p-4 flex flex-col gap-2"
-            >
-              {p.imageUrl && (
-                <img
-                  src={p.imageUrl}
-                  alt={p.name}
-                  className="w-full h-40 object-cover rounded"
-                />
-              )}
+        <ul className="divide-y rounded-md border">
+          {products.map((p) => {
+            const priceNum =
+              typeof p.price === "number"
+                ? p.price
+                : Number(p.price as unknown as string);
 
-              <h2 className="text-lg font-semibold">{p.name}</h2>
+            return (
+              <li key={p.id} className="p-4 flex items-center justify-between">
+                <div>
+                  <div className="font-medium">{p.name ?? "Sem nome"}</div>
+                  <div className="text-sm text-gray-500">
+                    Preço: R$ {Number.isFinite(priceNum) ? priceNum.toFixed(2) : "-"}
+                  </div>
+                </div>
 
-              <p className="text-sm text-muted-foreground">
-                {p.description ?? "Sem descrição"}
-              </p>
-
-              <div className="text-sm text-muted-foreground">
-                Preço: {formatPrice(p.price)}
-              </div>
-
-              <div className="text-xs text-gray-400 mt-2">
-                Criado em: {new Date(p.createdAt).toLocaleDateString("pt-BR")}
-              </div>
-            </div>
-          ))}
-        </div>
+                <div className="flex gap-2">
+                  <Link
+                    href={`/dashboard/produtos/${p.id}`}
+                    className="text-sm underline"
+                  >
+                    Detalhes
+                  </Link>
+                  <Link
+                    href={`/dashboard/produtos/${p.id}/editar`}
+                    className="text-sm underline"
+                  >
+                    Editar
+                  </Link>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       )}
-    </div>
+    </main>
   );
 }
